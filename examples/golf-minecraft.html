@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+	<title>Hole in Block VR - three.js</title>
+	<meta charset=utf-8 />
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="main.css">
+	<style>
+		#crosshair {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			width: 12px;
+			height: 12px;
+			margin-left: -6px;
+			margin-top: -6px;
+			pointer-events: none;
+			z-index: 10000;
+		}
+
+		#crosshair::before,
+		#crosshair::after {
+			content: "";
+			position: absolute;
+			background: #fff;
+		}
+
+		#crosshair::before {
+			left: 5px;
+			top: 0;
+			width: 2px;
+			height: 12px;
+		}
+
+		#crosshair::after {
+			top: 5px;
+			left: 0;
+			width: 12px;
+			height: 2px;
+		}
+
+		#fuerza-hud {
+			position: fixed;
+			top: 10px;
+			left: 50%;
+			transform: translateX(-50%);
+			color: white;
+			background: rgba(0, 0, 0, 0.6);
+			padding: 6px 12px;
+			border-radius: 6px;
+			font-size: 18px;
+			z-index: 10001;
+			font-family: sans-serif;
+		}
+
+		#fuerza-barra-container {
+			width: 100px;
+			height: 10px;
+			background: #555;
+			border-radius: 5px;
+			margin-top: 4px;
+			overflow: hidden;
+		}
+
+		#fuerza-barra {
+			height: 100%;
+			width: 25%;
+			/* comienza con 25% (para fuerza 1 de 4) */
+			background: linear-gradient(to right, #0f0, #ff0, #f00);
+			transition: width 0.2s;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="crosshair"></div>
+	<div id="puntaje-hud"
+		style="position: fixed; bottom: 10px; right: 20px; background: rgba(0, 0, 0, 0.6); color: white; padding: 6px 12px; border-radius: 6px; font-size: 18px; z-index: 10001; font-family: sans-serif;">
+		Puntaje: <span id="puntaje-valor">0</span>
+	</div>
+	<div id="fuerza-hud">
+		Fuerza: <span id="fuerza-valor">1</span>
+		<div id="fuerza-barra-container">
+			<div id="fuerza-barra"></div>
+		</div>
+	</div>
+	<div id="modal-instrucciones"
+		style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;color:white;display:flex;justify-content:center;align-items:center;z-index:9999;">
+		<div
+			style="background:#222;padding:30px;max-width:600px;border-radius:12px;text-align:center;box-shadow:0 0 20px #000;">
+			<h2>Bienvenid@ a <span style="color:#f44;">Hole in Block in VR</span></h2>
+			<p>🎯 El objetivo es meter la pelota en el hoyo en un solo tiro.</p>
+			<p>⛳ Son 19 hoyos, cada uno con su propio diseño y dificultad.</p>
+			<p>🖱️ CLICK IZQ para un tiro directo, CLICK DER para tiro bombeado.</p>
+			<p>🔢 Usa las teclas 1–4 para cambiar la fuerza del disparo (4 = máxima).</p>
+			<p>🎮 WASD para moverte, ESPACIO para saltar, MOUSE para mirar.</p>
+			<p style="margin-top:15px;font-size:14px;color:#ccc;">
+				Diseñado por <strong>Brachiel Silva</strong> ·
+				<a href="https://github.com/brachiel22200769" target="_blank" style="color:#4af;">GitHub</a>
+			</p>
+			<button id="btn-jugar"
+				style="margin-top:20px;padding:10px 30px;font-size:20px;background:red;color:white;border:none;border-radius:8px;cursor:pointer;">JUGAR</button>
+		</div>
+	</div>
+	<div id="container"></div>
+
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
+	<script type="module">
+
+		import * as THREE from 'three';
+
+		import Stats from 'three/addons/libs/stats.module.js';
+
+		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+		import { Octree } from 'three/addons/math/Octree.js';
+		import { OctreeHelper } from 'three/addons/helpers/OctreeHelper.js';
+
+		import { Capsule } from 'three/addons/math/Capsule.js';
+
+		import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+		import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+		const clock = new THREE.Clock();
+
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color(0x88ccee);
+		scene.fog = new THREE.Fog(0x88ccee, 0, 50);
+
+		const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+		window.camera = camera;
+		camera.rotation.order = 'YXZ';
+
+
+
+		const fillLight1 = new THREE.HemisphereLight(0x8dc1de, 0x00668d, 1.5);
+		fillLight1.position.set(2, 1, 1);
+		scene.add(fillLight1);
+
+		const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
+		directionalLight.position.set(- 5, 25, - 1);
+		directionalLight.castShadow = true;
+		directionalLight.shadow.camera.near = 0.01;
+		directionalLight.shadow.camera.far = 500;
+		directionalLight.shadow.camera.right = 30;
+		directionalLight.shadow.camera.left = - 30;
+		directionalLight.shadow.camera.top = 30;
+		directionalLight.shadow.camera.bottom = - 30;
+		directionalLight.shadow.mapSize.width = 1024;
+		directionalLight.shadow.mapSize.height = 1024;
+		directionalLight.shadow.radius = 4;
+		directionalLight.shadow.bias = - 0.00006;
+		scene.add(directionalLight);
+
+		const container = document.getElementById('container');
+
+		const renderer = new THREE.WebGLRenderer({ antialias: true });
+		renderer.setPixelRatio(window.devicePixelRatio);
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.VSMShadowMap;
+		renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		container.appendChild(renderer.domElement);
+
+		// Habilita modo VR
+		renderer.xr.enabled = true;
+		document.body.appendChild(VRButton.createButton(renderer));
+
+
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.VSMShadowMap;
+		renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		container.appendChild(renderer.domElement);
+		renderer.xr.enabled = true;
+		document.body.appendChild(VRButton.createButton(renderer));
+
+		const stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		container.appendChild(stats.domElement);
+
+		const GRAVITY = 30;
+
+		const NUM_SPHERES = 100;
+		const SPHERE_RADIUS = 0.012;
+
+		const STEPS_PER_FRAME = 5;
+
+		const sphereGeometry = new THREE.IcosahedronGeometry(SPHERE_RADIUS, 5);
+		const sphereMaterial = new THREE.MeshLambertMaterial({ color: 0xdede8d });
+
+		const spheres = [];
+		let sphereIdx = 0;
+		//AQUI
+		let forceLevel = 1;
+		let puntaje = 0;
+		let chargeMultiplier = 1;
+
+		for (let i = 0; i < NUM_SPHERES; i++) {
+
+			const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+			sphere.castShadow = true;
+			sphere.receiveShadow = true;
+
+			scene.add(sphere);
+
+			spheres.push({
+				mesh: sphere,
+				collider: new THREE.Sphere(new THREE.Vector3(0, 9999, 0), SPHERE_RADIUS),
+				velocity: new THREE.Vector3()
+			});
+
+		}
+
+		const worldOctree = new Octree();
+
+		const playerCollider = new Capsule(
+			new THREE.Vector3(0, 0.005, 0),
+			new THREE.Vector3(0, 0.015, 0),
+			0.012);
+
+		const playerVelocity = new THREE.Vector3();
+		const playerDirection = new THREE.Vector3();
+
+		let playerOnFloor = false;
+		let mouseTime = 0;
+
+		const keyStates = {};
+
+		const vector1 = new THREE.Vector3();
+		const vector2 = new THREE.Vector3();
+		const vector3 = new THREE.Vector3();
+
+		document.addEventListener('keydown', (event) => {
+
+			keyStates[event.code] = true;
+
+			document.addEventListener('keydown', (event) => {
+				keyStates[event.code] = true;
+
+				// Cambiar fuerza con teclas 1–4
+				if (['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(event.code)) {
+					forceLevel = parseInt(event.code.slice(-1)); // extrae el número
+					chargeMultiplier = forceLevel; // Ajusta el multiplicador de carga según el nivel de fuerza
+					console.log(`Fuerza de disparo ajustada a nivel ${forceLevel}`);
+					document.getElementById('fuerza-valor').textContent = forceLevel;
+					document.getElementById('fuerza-barra').style.width = `${(forceLevel / 4) * 100}%`;
+
+				}
+			});
+
+
+		});
+
+		document.addEventListener('keyup', (event) => {
+
+			keyStates[event.code] = false;
+
+		});
+
+		let mouseButton = null;
+		let mouseDownTime = 0;
+
+		container.addEventListener('mousedown', (event) => {
+			document.body.requestPointerLock();
+			mouseButton = event.button;
+			mouseDownTime = performance.now(); // 0 = izquierdo, 2 = derecho
+		});
+
+		document.addEventListener('mouseup', (event) => {
+			if (document.pointerLockElement !== null) {
+				const chargeTime = (performance.now() - mouseDownTime) * 0.001; // Tiempo de carga en segundos
+				if (event.button === 0) {
+					throwBall('direct');
+				} else if (event.button === 2) {
+					throwBall('lob');
+				}
+			}
+			mouseButton = null;
+		});
+
+
+		document.body.addEventListener('mousemove', (event) => {
+
+			if (document.pointerLockElement === document.body) {
+
+				camera.rotation.y -= event.movementX / 500;
+				camera.rotation.x -= event.movementY / 500;
+
+			}
+
+		});
+
+		window.addEventListener('resize', onWindowResize);
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		}
+
+		function throwBall(type = 'direct', chargeTime = 0.2) {
+			const sphere = spheres[sphereIdx];
+			camera.getWorldDirection(playerDirection);
+
+			playerVelocity.set(0, playerVelocity.y, 0);
+
+			sphere.collider.center.copy(playerCollider.end).addScaledVector(playerDirection, playerCollider.radius * 1.5);
+
+			// Limitar carga a máximo 1.5 segundos
+			const clampedCharge = Math.min(chargeTime, 1.5);
+			let impulse;
+
+			if (type === 'lob') {
+				impulse = (4 + clampedCharge * 5) * chargeMultiplier;
+				playerDirection.y = 1.0;
+				playerDirection.normalize();
+			} else {
+				impulse = (2 + clampedCharge * 6) * chargeMultiplier;
+			}
+
+			sphere.velocity.copy(playerDirection).multiplyScalar(impulse);
+
+			if (sonidoSwing.isPlaying) sonidoSwing.stop();
+			sonidoSwing.play();
+
+
+			sphereIdx = (sphereIdx + 1) % spheres.length;
+		}
+
+		function playerCollisions() {
+
+			const result = worldOctree.capsuleIntersect(playerCollider);
+
+			playerOnFloor = false;
+
+			if (result) {
+
+				playerOnFloor = result.normal.y > 0;
+
+				if (!playerOnFloor) {
+
+					playerVelocity.addScaledVector(result.normal, - result.normal.dot(playerVelocity));
+
+				}
+
+				if (result.depth >= 1e-10) {
+
+					playerCollider.translate(result.normal.multiplyScalar(result.depth));
+
+				}
+
+			}
+
+		}
+
+		function updatePlayer(deltaTime) {
+
+			let damping = Math.exp(- 4 * deltaTime) - 1;
+
+			if (!playerOnFloor) {
+
+				playerVelocity.y -= GRAVITY * deltaTime;
+
+				// small air resistance
+				damping *= 0.1;
+
+			}
+
+			playerVelocity.addScaledVector(playerVelocity, damping);
+
+			const deltaPosition = playerVelocity.clone().multiplyScalar(deltaTime);
+			playerCollider.translate(deltaPosition);
+
+			playerCollisions();
+
+			camera.position.copy(playerCollider.end);
+
+		}
+
+		function playerSphereCollision(sphere) {
+
+			const center = vector1.addVectors(playerCollider.start, playerCollider.end).multiplyScalar(0.5);
+
+			const sphere_center = sphere.collider.center;
+
+			const r = playerCollider.radius + sphere.collider.radius;
+			const r2 = r * r;
+
+			// approximation: player = 3 spheres
+
+			for (const point of [playerCollider.start, playerCollider.end, center]) {
+
+				const d2 = point.distanceToSquared(sphere_center);
+
+				if (d2 < r2) {
+
+					const normal = vector1.subVectors(point, sphere_center).normalize();
+					const v1 = vector2.copy(normal).multiplyScalar(normal.dot(playerVelocity));
+					const v2 = vector3.copy(normal).multiplyScalar(normal.dot(sphere.velocity));
+
+					playerVelocity.add(v2).sub(v1);
+					sphere.velocity.add(v1).sub(v2);
+
+					const d = (r - Math.sqrt(d2)) / 2;
+					sphere_center.addScaledVector(normal, - d);
+
+				}
+
+			}
+
+		}
+
+		function spheresCollisions() {
+
+			for (let i = 0, length = spheres.length; i < length; i++) {
+
+				const s1 = spheres[i];
+
+				for (let j = i + 1; j < length; j++) {
+
+					const s2 = spheres[j];
+
+					const d2 = s1.collider.center.distanceToSquared(s2.collider.center);
+					const r = s1.collider.radius + s2.collider.radius;
+					const r2 = r * r;
+
+					if (d2 < r2) {
+
+						const normal = vector1.subVectors(s1.collider.center, s2.collider.center).normalize();
+						const v1 = vector2.copy(normal).multiplyScalar(normal.dot(s1.velocity));
+						const v2 = vector3.copy(normal).multiplyScalar(normal.dot(s2.velocity));
+
+						s1.velocity.add(v2).sub(v1);
+						s2.velocity.add(v1).sub(v2);
+
+						const d = (r - Math.sqrt(d2)) / 2;
+
+						s1.collider.center.addScaledVector(normal, d);
+						s2.collider.center.addScaledVector(normal, - d);
+
+					}
+
+				}
+
+			}
+
+		}
+
+		function updateSpheres(deltaTime) {
+
+			spheres.forEach(sphere => {
+
+				sphere.collider.center.addScaledVector(sphere.velocity, deltaTime);
+
+				const result = worldOctree.sphereIntersect(sphere.collider);
+
+				if (result) {
+
+					sphere.velocity.addScaledVector(result.normal, - result.normal.dot(sphere.velocity) * 1.5);
+					sphere.collider.center.add(result.normal.multiplyScalar(result.depth));
+
+				} else {
+
+					sphere.velocity.y -= GRAVITY * deltaTime;
+
+				}
+
+				const damping = Math.exp(- 1.5 * deltaTime) - 1;
+				sphere.velocity.addScaledVector(sphere.velocity, damping);
+				// Detectar si la pelota está en la altura del hoyo (Y ≈ 0.20)
+				if (sphere.collider.center.y <= 0.12 && sphere.velocity.length() > 0.1 && !sphere.counted) {
+					sphere.counted = true;
+					puntaje += 10;
+					document.getElementById('puntaje-valor').textContent = puntaje;
+				}
+
+				playerSphereCollision(sphere);
+
+			});
+
+			spheresCollisions();
+
+			for (const sphere of spheres) {
+
+				sphere.mesh.position.copy(sphere.collider.center);
+
+			}
+
+		}
+
+		function getForwardVector() {
+
+			camera.getWorldDirection(playerDirection);
+			playerDirection.y = 0;
+			playerDirection.normalize();
+
+			return playerDirection;
+
+		}
+
+		function getSideVector() {
+
+			camera.getWorldDirection(playerDirection);
+			playerDirection.y = 0;
+			playerDirection.normalize();
+			playerDirection.cross(camera.up);
+
+			return playerDirection;
+
+		}
+
+		function controls(deltaTime) {
+
+			// gives a bit of air control
+			const speedDelta = deltaTime * (playerOnFloor ? 4 : 1.5);
+
+			if (keyStates['KeyW']) {
+
+				playerVelocity.add(getForwardVector().multiplyScalar(speedDelta));
+
+			}
+
+			if (keyStates['KeyS']) {
+
+				playerVelocity.add(getForwardVector().multiplyScalar(- speedDelta));
+
+			}
+
+			if (keyStates['KeyA']) {
+
+				playerVelocity.add(getSideVector().multiplyScalar(- speedDelta));
+
+			}
+
+			if (keyStates['KeyD']) {
+
+				playerVelocity.add(getSideVector().multiplyScalar(speedDelta));
+
+			}
+
+			if (playerOnFloor) {
+
+				if (keyStates['Space']) {
+
+					playerVelocity.y = 2.0;
+
+				}
+
+			}
+
+		}
+
+		const loader = new GLTFLoader().setPath('./models/gltf/');
+
+		loader.load('golf-escenario.glb', (gltf) => {
+
+			scene.add(gltf.scene);
+
+			worldOctree.fromGraphNode(gltf.scene);
+
+			gltf.scene.traverse(child => {
+
+				if (child.isMesh) {
+
+					child.castShadow = true;
+					child.receiveShadow = true;
+
+					if (child.material.map) {
+
+						child.material.map.anisotropy = 4;
+
+					}
+
+				}
+
+			});
+
+			// Obtener límites y crear muros invisibles
+			const boundingBox = new THREE.Box3().setFromObject(gltf.scene);
+			const size = new THREE.Vector3();
+			boundingBox.getSize(size);
+			const center = new THREE.Vector3();
+			boundingBox.getCenter(center);
+
+			const materialInvisible = new THREE.MeshBasicMaterial({ visible: false });
+			const thickness = 1;
+			const paredes = [];
+
+			// Frente
+			paredes.push(new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, thickness), materialInvisible));
+			paredes[0].position.set(center.x, center.y, boundingBox.max.z + thickness / 2);
+
+			// Atrás
+			paredes.push(new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, thickness), materialInvisible));
+			paredes[1].position.set(center.x, center.y, boundingBox.min.z - thickness / 2);
+
+			// Izquierda
+			paredes.push(new THREE.Mesh(new THREE.BoxGeometry(thickness, size.y, size.z), materialInvisible));
+			paredes[2].position.set(boundingBox.min.x - thickness / 2, center.y, center.z);
+
+			// Derecha
+			paredes.push(new THREE.Mesh(new THREE.BoxGeometry(thickness, size.y, size.z), materialInvisible));
+			paredes[3].position.set(boundingBox.max.x + thickness / 2, center.y, center.z);
+
+			// Fondo
+			paredes.push(new THREE.Mesh(new THREE.BoxGeometry(size.x, thickness, size.z), materialInvisible));
+			paredes[4].position.set(center.x, boundingBox.min.y - thickness / 2, center.z);
+
+			paredes.forEach(pared => {
+				scene.add(pared);
+				worldOctree.fromGraphNode(pared); // importante para colisiones
+			});
+
+			const helper = new OctreeHelper(worldOctree);
+			helper.visible = false;
+			scene.add(helper);
+
+			const gui = new GUI({ width: 200 });
+			gui.add({ debug: false }, 'debug').onChange(function (value) {
+				helper.visible = value;
+			});
+
+		});
+
+		const helper = new OctreeHelper(worldOctree);
+		helper.visible = false;
+		scene.add(helper);
+
+		const gui = new GUI({ width: 200 });
+		gui.add({ debug: false }, 'debug')
+			.onChange(function (value) {
+
+				helper.visible = value;
+
+			});
+
+		function teleportPlayerIfOob() {
+
+			if (camera.position.y <= - 25) {
+
+				playerCollider.start.set(0, 2.06, 0);
+				playerCollider.end.set(0, 2.18, 0);
+				playerCollider.radius = 0.025;
+				camera.position.copy(playerCollider.end);
+				camera.rotation.set(0, 0, 0);
+
+			}
+
+		}
+
+
+		function animate() {
+
+			const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
+
+			for (let i = 0; i < STEPS_PER_FRAME; i++) {
+
+				controls(deltaTime);
+
+				updatePlayer(deltaTime);
+
+				updateSpheres(deltaTime);
+
+				teleportPlayerIfOob();
+
+			}
+
+			renderer.render(scene, camera);
+
+			stats.update();
+
+		}
+
+		renderer.setAnimationLoop(animate);
+
+		function reproducirMusica() {
+			if (!musicaFondo.isPlaying) {
+				musicaFondo.play().catch((e) => {
+					console.warn("No se pudo reproducir la música:", e);
+				});
+			}
+		}
+		// 🎧 Configurar sonidos
+		const listener = new THREE.AudioListener();
+		camera.add(listener);
+
+		const audioLoader = new THREE.AudioLoader();
+
+		let musicaCargada = false;
+
+		// Música de fondo
+		const musicaFondo = new THREE.Audio(listener);
+		audioLoader.load('musica-fondo.mp3', function (buffer) {
+			musicaFondo.setBuffer(buffer);
+			musicaFondo.setLoop(true);
+			musicaFondo.setVolume(0.8);
+			musicaCargada = true;
+		});
+		document.getElementById('btn-jugar').addEventListener('click', () => {
+			document.getElementById('modal-instrucciones').style.display = 'none';
+			document.getElementById('crosshair').style.display = 'block';
+
+			if (!musicaFondo.isPlaying) {
+				musicaFondo.play().catch((e) => {
+					console.warn("No se pudo reproducir la música:", e);
+				});
+			}
+		});
+
+
+		// Sonido al lanzar pelota
+		const sonidoSwing = new THREE.Audio(listener);
+		audioLoader.load('golf-swing.mp3', function (buffer) {
+			sonidoSwing.setBuffer(buffer);
+			sonidoSwing.setVolume(1);
+		});
+
+
+
+	</script>
+</body>
+
+</html>
