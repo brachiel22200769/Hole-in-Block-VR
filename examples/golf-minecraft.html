@@ -168,20 +168,22 @@
 		const renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setPixelRatio(window.devicePixelRatio);
 		renderer.setSize(window.innerWidth, window.innerHeight);
-
-		// Activar sombras y efectos visuales
 		renderer.shadowMap.enabled = true;
 		renderer.shadowMap.type = THREE.VSMShadowMap;
 		renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		container.appendChild(renderer.domElement);
 
-		// Activar soporte para VR/WebXR
+		// Habilita modo VR
 		renderer.xr.enabled = true;
-
-		// Insertar el botón de VR en la página (solo una vez)
 		document.body.appendChild(VRButton.createButton(renderer));
 
-		// Añadir el canvas al contenedor de tu juego
+
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.VSMShadowMap;
+		renderer.toneMapping = THREE.ACESFilmicToneMapping;
 		container.appendChild(renderer.domElement);
+		renderer.xr.enabled = true;
+		document.body.appendChild(VRButton.createButton(renderer));
 
 		const stats = new Stats();
 		stats.domElement.style.position = 'absolute';
@@ -243,15 +245,22 @@
 		document.addEventListener('keydown', (event) => {
 
 			keyStates[event.code] = true;
-			// Cambiar fuerza con teclas 1–4
-			if (['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(event.code)) {
-				forceLevel = parseInt(event.code.slice(-1)); // extrae el número
-				chargeMultiplier = forceLevel; // Ajusta el multiplicador de carga según el nivel de fuerza
-				console.log(`Fuerza de disparo ajustada a nivel ${forceLevel}`);
-				document.getElementById('fuerza-valor').textContent = forceLevel;
-				document.getElementById('fuerza-barra').style.width = `${(forceLevel / 4) * 50}%`;
 
-			}
+			document.addEventListener('keydown', (event) => {
+				keyStates[event.code] = true;
+
+				// Cambiar fuerza con teclas 1–4
+				if (['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(event.code)) {
+					forceLevel = parseInt(event.code.slice(-1)); // extrae el número
+					chargeMultiplier = forceLevel; // Ajusta el multiplicador de carga según el nivel de fuerza
+					console.log(`Fuerza de disparo ajustada a nivel ${forceLevel}`);
+					document.getElementById('fuerza-valor').textContent = forceLevel;
+					document.getElementById('fuerza-barra').style.width = `${(forceLevel / 4) * 100}%`;
+
+				}
+			});
+
+
 		});
 
 		document.addEventListener('keyup', (event) => {
@@ -559,7 +568,7 @@
 		const loader = new GLTFLoader().setPath('./models/gltf/');
 		loader.setMeshoptDecoder(MeshoptDecoder); // Soporte para meshopt compression
 
-		loader.load('golf-escenario-lite.glb', (gltf) => {
+		loader.load('golf-escenario-lite2.glb', (gltf) => {
 
 			scene.add(gltf.scene);
 			worldOctree.fromGraphNode(gltf.scene);
@@ -617,94 +626,104 @@
 			const gui = new GUI({ width: 200 });
 			gui.add({ debug: false }, 'debug')
 				.onChange(function (value) {
-
 					helper.visible = value;
-
 				});
 
-			function teleportPlayerIfOob() {
-
-				if (camera.position.y <= - 25) {
-
-					playerCollider.start.set(0, 2.06, 0);
-					playerCollider.end.set(0, 2.18, 0);
-					playerCollider.radius = 0.025;
-					camera.position.copy(playerCollider.end);
-					camera.rotation.set(0, 0, 0);
-
-				}
-
-			}
-
-			function animate() {
-
-				const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
-
-				for (let i = 0; i < STEPS_PER_FRAME; i++) {
-
-					controls(deltaTime);
-
-					updatePlayer(deltaTime);
-
-					updateSpheres(deltaTime);
-
-					teleportPlayerIfOob();
-
-				}
-
-				renderer.render(scene, camera);
-
-				stats.update();
-
-			}
-
-			renderer.setAnimationLoop(animate);
-
-			function reproducirMusica() {
-				if (!musicaFondo.isPlaying) {
-					musicaFondo.play().catch((e) => {
-						console.warn("No se pudo reproducir la música:", e);
-					});
-				}
-			}
-			// 🎧 Configurar sonidos
-			const listener = new THREE.AudioListener();
-			camera.add(listener);
-
-			const audioLoader = new THREE.AudioLoader();
-
-			let musicaCargada = false;
-
-			// Música de fondo
-			const musicaFondo = new THREE.Audio(listener);
-			audioLoader.load('musica-fondo.mp3', function (buffer) {
-				musicaFondo.setBuffer(buffer);
-				musicaFondo.setLoop(true);
-				musicaFondo.setVolume(0.8);
-				musicaCargada = true;
-			});
-			document.getElementById('btn-jugar').addEventListener('click', () => {
-				document.getElementById('modal-instrucciones').style.display = 'none';
-				document.getElementById('crosshair').style.display = 'block';
-
-				// Si está en VR, iniciar animación si no lo hace aún
-				if (!musicaFondo.isPlaying && musicaCargada) {
-					try {
-						musicaFondo.play();
-					} catch (e) {
-						console.warn("No se pudo reproducir la música:", e);
-					}
-				}
-			});
-
-			// Sonido al lanzar pelota
-			const sonidoSwing = new THREE.Audio(listener);
-			audioLoader.load('golf-swing.mp3', function (buffer) {
-				sonidoSwing.setBuffer(buffer);
-				sonidoSwing.setVolume(1);
-			});
-
 		});
+
+		const helper = new OctreeHelper(worldOctree);
+		helper.visible = false;
+		scene.add(helper);
+
+		const gui = new GUI({ width: 200 });
+		gui.add({ debug: false }, 'debug')
+			.onChange(function (value) {
+
+				helper.visible = value;
+
+			});
+
+		function teleportPlayerIfOob() {
+
+			if (camera.position.y <= - 25) {
+
+				playerCollider.start.set(0, 2.06, 0);
+				playerCollider.end.set(0, 2.18, 0);
+				playerCollider.radius = 0.025;
+				camera.position.copy(playerCollider.end);
+				camera.rotation.set(0, 0, 0);
+
+			}
+
+		}
+
+		function animate() {
+
+			const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
+
+			for (let i = 0; i < STEPS_PER_FRAME; i++) {
+
+				controls(deltaTime);
+
+				updatePlayer(deltaTime);
+
+				updateSpheres(deltaTime);
+
+				teleportPlayerIfOob();
+
+			}
+
+			renderer.render(scene, camera);
+
+			stats.update();
+
+		}
+
+		renderer.setAnimationLoop(animate);
+
+		function reproducirMusica() {
+			if (!musicaFondo.isPlaying) {
+				musicaFondo.play().catch((e) => {
+					console.warn("No se pudo reproducir la música:", e);
+				});
+			}
+		}
+		// 🎧 Configurar sonidos
+		const listener = new THREE.AudioListener();
+		camera.add(listener);
+
+		const audioLoader = new THREE.AudioLoader();
+
+		let musicaCargada = false;
+
+		// Música de fondo
+		const musicaFondo = new THREE.Audio(listener);
+		audioLoader.load('musica-fondo.mp3', function (buffer) {
+			musicaFondo.setBuffer(buffer);
+			musicaFondo.setLoop(true);
+			musicaFondo.setVolume(0.8);
+			musicaCargada = true;
+		});
+		document.getElementById('btn-jugar').addEventListener('click', () => {
+			document.getElementById('modal-instrucciones').style.display = 'none';
+			document.getElementById('crosshair').style.display = 'block';
+
+			if (!musicaFondo.isPlaying) {
+				musicaFondo.play().catch((e) => {
+					console.warn("No se pudo reproducir la música:", e);
+				});
+			}
+		});
+
+
+		// Sonido al lanzar pelota
+		const sonidoSwing = new THREE.Audio(listener);
+		audioLoader.load('golf-swing.mp3', function (buffer) {
+			sonidoSwing.setBuffer(buffer);
+			sonidoSwing.setVolume(1);
+		});
+
+
 
 	</script>
 </body>
