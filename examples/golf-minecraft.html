@@ -120,6 +120,8 @@
 
 		import Stats from 'three/addons/libs/stats.module.js';
 
+		import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
 		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 		import { Octree } from 'three/addons/math/Octree.js';
@@ -564,31 +566,25 @@
 		}
 
 		const loader = new GLTFLoader().setPath('./models/gltf/');
+		loader.setMeshoptDecoder(MeshoptDecoder); // ✅ Soporte para meshopt compression
 
-		loader.load('golf-escenario.glb', (gltf) => {
+		loader.load('golf-escenario-lite.glb', (gltf) => {
 
 			scene.add(gltf.scene);
-
 			worldOctree.fromGraphNode(gltf.scene);
 
 			gltf.scene.traverse(child => {
-
 				if (child.isMesh) {
-
 					child.castShadow = true;
 					child.receiveShadow = true;
 
 					if (child.material.map) {
-
 						child.material.map.anisotropy = 4;
-
 					}
-
 				}
-
 			});
 
-			// Obtener límites y crear muros invisibles
+			// ✅ Estas líneas deben ir DENTRO del loader.load()
 			const boundingBox = new THREE.Box3().setFromObject(gltf.scene);
 			const size = new THREE.Vector3();
 			boundingBox.getSize(size);
@@ -621,7 +617,7 @@
 
 			paredes.forEach(pared => {
 				scene.add(pared);
-				worldOctree.fromGraphNode(pared); // importante para colisiones
+				worldOctree.fromGraphNode(pared);
 			});
 
 			const helper = new OctreeHelper(worldOctree);
@@ -629,9 +625,10 @@
 			scene.add(helper);
 
 			const gui = new GUI({ width: 200 });
-			gui.add({ debug: false }, 'debug').onChange(function (value) {
-				helper.visible = value;
-			});
+			gui.add({ debug: false }, 'debug')
+				.onChange(function (value) {
+					helper.visible = value;
+				});
 
 		});
 
