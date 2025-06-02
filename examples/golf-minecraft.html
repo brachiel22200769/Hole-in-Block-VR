@@ -177,14 +177,6 @@
 		renderer.xr.enabled = true;
 		document.body.appendChild(VRButton.createButton(renderer));
 
-
-		renderer.shadowMap.enabled = true;
-		renderer.shadowMap.type = THREE.VSMShadowMap;
-		renderer.toneMapping = THREE.ACESFilmicToneMapping;
-		container.appendChild(renderer.domElement);
-		renderer.xr.enabled = true;
-		document.body.appendChild(VRButton.createButton(renderer));
-
 		const stats = new Stats();
 		stats.domElement.style.position = 'absolute';
 		stats.domElement.style.top = '0px';
@@ -226,9 +218,9 @@
 		const worldOctree = new Octree();
 
 		const playerCollider = new Capsule(
-			new THREE.Vector3(0, 0.005, 0),
-			new THREE.Vector3(0, 0.015, 0),
-			0.012);
+			new THREE.Vector3(0, 0.2, 0),
+			new THREE.Vector3(0, 0.3, 0),
+			0.25);
 
 		const playerVelocity = new THREE.Vector3();
 		const playerDirection = new THREE.Vector3();
@@ -647,8 +639,8 @@
 
 			if (camera.position.y <= - 25) {
 
-				playerCollider.start.set(0, 2.06, 0);
-				playerCollider.end.set(0, 2.18, 0);
+				playerCollider.start.set(0, 3, 0);
+				playerCollider.end.set(0, 1.9, 0);
 				playerCollider.radius = 0.025;
 				camera.position.copy(playerCollider.end);
 				camera.rotation.set(0, 0, 0);
