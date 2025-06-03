@@ -356,7 +356,7 @@
 
 			playerVelocity.set(0, playerVelocity.y, 0);
 
-			sphere.collider.center.copy(playerCollider.end).addScaledVector(playerDirection, playerCollider.radius * 1.5);
+			sphere.collider.center.copy(camera.position).addScaledVector(playerDirection, 0.2); // 0.2 = pequeña distancia frente a cámara
 
 			// Limitar carga a máximo 1.5 segundos
 			const clampedCharge = Math.min(chargeTime, 1.5);
