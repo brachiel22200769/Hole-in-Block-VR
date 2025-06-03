@@ -357,9 +357,11 @@
 			playerVelocity.set(0, playerVelocity.y, 0);
 
 			const spawnPosition = camera.position.clone();
-			spawnPosition.y += 10; // súbela 25 cm
+			camera.getWorldDirection(playerDirection);
+			spawnPosition.addScaledVector(playerDirection, 0.4); // adelante
+			spawnPosition.y += 0.2; // más alto
 
-			sphere.collider.center.copy(spawnPosition).addScaledVector(playerDirection, 0.2);
+			sphere.collider.center.copy(spawnPosition);
 
 			// Limitar carga a máximo 1.5 segundos
 			const clampedCharge = Math.min(chargeTime, 1.5);
@@ -661,6 +663,19 @@
 				scene.add(pared);
 				worldOctree.fromGraphNode(pared);
 			});
+
+			// Crear un suelo invisible para evitar que el jugador caiga en PC
+			const sueloInvisible = new THREE.Mesh(
+				new THREE.BoxGeometry(100, 1, 100), // grande y plano
+				new THREE.MeshBasicMaterial({ visible: false }) // invisible
+			);
+
+			sueloInvisible.position.y = 0; // al ras del mapa
+			scene.add(sueloInvisible);
+
+			// Añadir al octree para colisiones
+			worldOctree.fromGraphNode(sueloInvisible);
+
 
 			const helper = new OctreeHelper(worldOctree);
 			helper.visible = false;
