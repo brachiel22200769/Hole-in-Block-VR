@@ -178,9 +178,14 @@
 		document.body.appendChild(VRButton.createButton(renderer));
 
 		renderer.xr.addEventListener('sessionstart', () => {
+			// Forzar ubicación inicial en el mapa
 			playerCollider.start.set(0, 0.2, 0);
-			playerCollider.end.set(0, 0.3, 0);
+			playerCollider.end.set(0, 0.5, 0);
+			playerCollider.radius = 0.1;
 			camera.position.copy(playerCollider.end);
+
+			// Opcional: resetear rotación
+			camera.rotation.set(0, 0, 0);
 		});
 
 
@@ -630,7 +635,7 @@
 				});
 
 		});
-		
+
 		const gui = new GUI({ width: 200 });
 		gui.add({ debug: false }, 'debug')
 			.onChange(function (value) {
