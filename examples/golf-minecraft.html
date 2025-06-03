@@ -182,6 +182,16 @@
 		controller.addEventListener('selectstart', () => {
 			throwBall('direct'); // Lanza pelota cuando presionas el gatillo
 		});
+		
+		const controllerLeft = renderer.xr.getController(1);
+		scene.add(controllerLeft);
+
+		controllerLeft.addEventListener('selectstart', () => {
+			throwBall('lob'); // disparo lob con gatillo izquierdo
+		});
+
+		scene.add(controllerLeft);
+
 		document.body.appendChild(VRButton.createButton(renderer));
 
 		let joystickX = 0, joystickY = 0;
