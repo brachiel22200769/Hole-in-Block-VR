@@ -359,7 +359,7 @@
 			const spawnPosition = camera.position.clone();
 			camera.getWorldDirection(playerDirection);
 			spawnPosition.addScaledVector(playerDirection, 0.4); // adelante
-			spawnPosition.y += 0.2; // más alto
+			spawnPosition.y += 1; // más alto
 
 			sphere.collider.center.copy(spawnPosition);
 
