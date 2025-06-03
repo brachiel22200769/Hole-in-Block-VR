@@ -351,37 +351,28 @@
 		}
 
 		function throwBall(type = 'direct', chargeTime = 0.2) {
-			const sphere = spheres[sphereIdx];
-			camera.getWorldDirection(playerDirection);
+			if (balls.length >= maxBalls) return;
 
-			playerVelocity.set(0, playerVelocity.y, 0);
+			const sphere = balls[balls.length % maxBalls];
+			const playerVelocity = getForwardVector().multiplyScalar(0.1);
 
-			const spawnPosition = camera.position.clone();
-			camera.getWorldDirection(playerDirection);
-			spawnPosition.addScaledVector(playerDirection, 0.4); // adelante
-			spawnPosition.y += 1; // más alto
-
-			sphere.collider.center.copy(spawnPosition);
-
-			// Limitar carga a máximo 1.5 segundos
-			const clampedCharge = Math.min(chargeTime, 1.5);
-			let impulse;
-
+			const clampedCharge = Math.min(Math.max(chargeTime, 0), 1);
+			let impulse = 0;
 			if (type === 'lob') {
-				impulse = (4 + clampedCharge * 2) * chargeMultiplier;
-				playerDirection.y = 1.0;
-				playerDirection.normalize();
+				impulse = (4 + clampedCharge * 5) * chargeMultiplier;
 			} else {
 				impulse = (2 + clampedCharge * 6) * chargeMultiplier;
 			}
 
-			sphere.velocity.copy(playerDirection).multiplyScalar(impulse);
+			const playerDirection = getForwardVector();
+			sphere.velocity.copy(playerVelocity).addScaledVector(playerDirection, impulse);
 
-			if (sonidoSwing.isPlaying) sonidoSwing.stop();
-			sonidoSwing.play();
+			sphere.collider.center.copy(playerCollider.end).addScaledVector(playerDirection, playerCollider.radius * 1.5);
 
+			audioDisparo.currentTime = 0;
+			audioDisparo.play();
 
-			sphereIdx = (sphereIdx + 1) % spheres.length;
+			balls.push(sphere);
 		}
 
 		function playerCollisions() {
