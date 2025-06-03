@@ -175,17 +175,50 @@
 
 		// Habilita modo VR
 		renderer.xr.enabled = true;
+
+		const controller = renderer.xr.getController(0);
+		scene.add(controller);
+
+		controller.addEventListener('selectstart', () => {
+			throwBall('direct'); // Lanza pelota cuando presionas el gatillo
+		});
 		document.body.appendChild(VRButton.createButton(renderer));
 
 		renderer.xr.addEventListener('sessionstart', () => {
-			// Forzar ubicación inicial en el mapa
-			playerCollider.start.set(0, 0.2, 0);
-			playerCollider.end.set(0, 0.5, 0);
-			playerCollider.radius = 0.1;
-			camera.position.copy(playerCollider.end);
+			const session = renderer.xr.getSession();
 
-			// Opcional: resetear rotación
-			camera.rotation.set(0, 0, 0);
+			session.addEventListener('inputsourceschange', () => {
+				for (const source of session.inputSources) {
+					if (source.handedness === 'right' && source.gamepad) {
+						const gamepad = source.gamepad;
+
+						renderer.setAnimationLoop(() => {
+							const [x, y] = gamepad.axes;
+
+							const forward = new THREE.Vector3();
+							camera.getWorldDirection(forward);
+							forward.y = 0;
+							forward.normalize();
+
+							const side = new THREE.Vector3();
+							side.crossVectors(camera.up, forward).normalize();
+
+							const speed = 0.05;
+
+							playerCollider.start.addScaledVector(forward, -y * speed);
+							playerCollider.end.addScaledVector(forward, -y * speed);
+							playerCollider.start.addScaledVector(side, x * speed);
+							playerCollider.end.addScaledVector(side, x * speed);
+
+							camera.position.copy(playerCollider.end);
+
+							renderer.render(scene, camera);
+							stats.update();
+
+						});
+					}
+				}
+			});
 		});
 
 
