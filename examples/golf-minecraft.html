@@ -576,6 +576,8 @@
 
 			scene.add(gltf.scene);
 
+			gltf.scene.scale.set(2, 2, 2); // escala 2x en todos los ejes
+
 			worldOctree.fromGraphNode(gltf.scene);
 
 			gltf.scene.traverse(child => {
