@@ -667,19 +667,6 @@
 				worldOctree.fromGraphNode(pared);
 			});
 
-			// Crear un suelo invisible para evitar que el jugador caiga en PC
-			const sueloInvisible = new THREE.Mesh(
-				new THREE.BoxGeometry(100, 1, 100), // grande y plano
-				new THREE.MeshBasicMaterial({ visible: false }) // invisible
-			);
-
-			sueloInvisible.position.y = 1; // al ras del mapa
-			scene.add(sueloInvisible);
-
-			// Añadir al octree para colisiones
-			worldOctree.fromGraphNode(sueloInvisible);
-
-
 			const helper = new OctreeHelper(worldOctree);
 			helper.visible = false;
 			scene.add(helper);
