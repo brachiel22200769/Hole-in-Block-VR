@@ -118,6 +118,8 @@
 
 		import * as THREE from 'three';
 
+		import { enableLocomotion } from 'https://raw.githubusercontent.com/immersive-web/webxr-locomotion/main/locomotion.js';
+
 		import Stats from 'three/addons/libs/stats.module.js';
 
 		import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -175,19 +177,64 @@
 
 		// Habilita modo VR
 		renderer.xr.enabled = true;
+		enableLocomotion(renderer, scene, camera);
 		document.body.appendChild(VRButton.createButton(renderer));
 
+		const playerCollider = new Capsule(
+			new THREE.Vector3(0, 0.008, 0),
+			new THREE.Vector3(0, 0.005, 0),
+			0.1);
+
 		renderer.xr.addEventListener('sessionstart', () => {
+			const session = renderer.xr.getSession();
 			// Forzar ubicación inicial en el mapa
+			session.addEventListener('select', () => {
+				// Disparo VR con el botón de selección (gatillo)
+				throwBall('direct');
+			});
 			playerCollider.start.set(0, 0.2, 0);
 			playerCollider.end.set(0, 0.5, 0);
 			playerCollider.radius = 0.1;
 			camera.position.copy(playerCollider.end);
-
 			// Opcional: resetear rotación
 			camera.rotation.set(0, 0, 0);
-		});
+			// Detectar fuentes de entrada (controladores)
+			session.addEventListener('inputsourceschange', () => {
+				for (const source of session.inputSources) {
+					if (source.handedness === 'right' && source.gamepad) {
+						const gamepad = source.gamepad;
 
+						// Inicia loop de movimiento VR
+						renderer.setAnimationLoop(() => {
+							// Movimiento con joystick derecho
+							const [x, y] = gamepad.axes;
+
+							// Direcciones
+							const forward = new THREE.Vector3();
+							camera.getWorldDirection(forward);
+							forward.y = 0;
+							forward.normalize();
+
+							const side = new THREE.Vector3();
+							side.crossVectors(camera.up, forward).normalize();
+
+							const speed = 0.04; // Ajusta la velocidad
+
+							playerCollider.start.addScaledVector(forward, -y * speed);
+							playerCollider.end.addScaledVector(forward, -y * speed);
+
+							playerCollider.start.addScaledVector(side, x * speed);
+							playerCollider.end.addScaledVector(side, x * speed);
+
+							camera.position.copy(playerCollider.end);
+
+							renderer.render(scene, camera);
+							stats.update();
+						});
+					}
+				}
+			});
+		});
 
 		const stats = new Stats();
 		stats.domElement.style.position = 'absolute';
@@ -228,11 +275,6 @@
 		}
 
 		const worldOctree = new Octree();
-
-		const playerCollider = new Capsule(
-			new THREE.Vector3(0, 0.008, 0),
-			new THREE.Vector3(0, 0.005, 0),
-			0.1);
 
 		const playerVelocity = new THREE.Vector3();
 		const playerDirection = new THREE.Vector3();
@@ -710,6 +752,12 @@
 		document.getElementById('btn-jugar').addEventListener('click', () => {
 			document.getElementById('modal-instrucciones').style.display = 'none';
 			document.getElementById('crosshair').style.display = 'block';
+
+			// Mostrar mira también al entrar a VR directamente
+			renderer.xr.addEventListener('sessionstart', () => {
+				document.getElementById('crosshair').style.display = 'block';
+			});
+
 
 			if (!musicaFondo.isPlaying) {
 				musicaFondo.play().catch((e) => {
