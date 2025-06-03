@@ -177,6 +177,13 @@
 		renderer.xr.enabled = true;
 		document.body.appendChild(VRButton.createButton(renderer));
 
+		renderer.xr.addEventListener('sessionstart', () => {
+			playerCollider.start.set(0, 0.2, 0);
+			playerCollider.end.set(0, 0.3, 0);
+			camera.position.copy(playerCollider.end);
+		});
+
+
 		const stats = new Stats();
 		stats.domElement.style.position = 'absolute';
 		stats.domElement.style.top = '0px';
@@ -623,11 +630,7 @@
 				});
 
 		});
-
-		const helper = new OctreeHelper(worldOctree);
-		helper.visible = false;
-		scene.add(helper);
-
+		
 		const gui = new GUI({ width: 200 });
 		gui.add({ debug: false }, 'debug')
 			.onChange(function (value) {
