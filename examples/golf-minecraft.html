@@ -357,7 +357,7 @@
 			playerVelocity.set(0, playerVelocity.y, 0);
 
 			const spawnPosition = camera.position.clone();
-			spawnPosition.y += 1; // súbela 25 cm
+			spawnPosition.y += 10; // súbela 25 cm
 
 			sphere.collider.center.copy(spawnPosition).addScaledVector(playerDirection, 0.2);
 
