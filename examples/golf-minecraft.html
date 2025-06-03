@@ -421,6 +421,9 @@
 				// small air resistance
 				damping *= 0.1;
 
+				teleportPlayerIfOob();
+
+
 			}
 
 			playerVelocity.addScaledVector(playerVelocity, damping);
@@ -670,7 +673,7 @@
 				new THREE.MeshBasicMaterial({ visible: false }) // invisible
 			);
 
-			sueloInvisible.position.y = 0; // al ras del mapa
+			sueloInvisible.position.y = 1; // al ras del mapa
 			scene.add(sueloInvisible);
 
 			// Añadir al octree para colisiones
@@ -698,17 +701,17 @@
 			});
 
 		function teleportPlayerIfOob() {
+			// Reposicionar al jugador si cae fuera del mapa
+			if (camera.position.y <= -25) {
+				const respawnHeight = 10; // Altura segura, visible y por encima del mapa
 
-			if (camera.position.y <= - 25) {
+				playerCollider.start.set(0, respawnHeight - 0.2, 0); // pies
+				playerCollider.end.set(0, respawnHeight, 0);         // cabeza
+				playerCollider.radius = 0.1;
 
-				playerCollider.start.set(0, 0.2, 0);
-				playerCollider.end.set(0, 0.3, 0);
-				playerCollider.radius = 0.025;
 				camera.position.copy(playerCollider.end);
 				camera.rotation.set(0, 0, 0);
-
 			}
-
 		}
 
 		function animate() {
