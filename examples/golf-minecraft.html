@@ -620,7 +620,7 @@
 				const speed = deltaTime * 3;
 
 				playerVelocity.addScaledVector(forward, -joystickY * speed);
-				playerVelocity.addScaledVector(side, joystickX * speed);
+				playerVelocity.addScaledVector(side, -joystickX * speed);
 			}
 
 			// gives a bit of air control
