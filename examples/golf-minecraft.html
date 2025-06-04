@@ -235,6 +235,17 @@
 		//AQUI
 		let forceLevel = 1;
 		let puntaje = 0;
+
+		let hoyoActual = 0;
+
+		const posicionesHoyos = [
+			new THREE.Vector3(0.9, 1, -0.6), // Hoyo 1
+			new THREE.Vector3(10, 2, 5),     // Hoyo 2
+			new THREE.Vector3(20, 2, -8),    // Hoyo 3
+			new THREE.Vector3(30, 2, 12),    // Hoyo 4
+			// Agrega más posiciones aquí
+		];
+
 		let chargeMultiplier = 1;
 
 		for (let i = 0; i < NUM_SPHERES; i++) {
@@ -787,4 +798,5 @@
 
 	</script>
 </body>
+
 </html>
