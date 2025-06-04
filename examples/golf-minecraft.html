@@ -90,11 +90,10 @@
 		<div
 			style="background:#222;padding:30px;max-width:600px;border-radius:12px;text-align:center;box-shadow:0 0 20px #000;">
 			<h2>Bienvenid@ a <span style="color:#f44;">Hole in Block VR</span></h2>
-			<p>🎯 El objetivo es meter la pelota en el hoyo en un solo tiro.</p>
+			<p>🎯 El objetivo es meter la pelota en el hoyo, puedes patearla para ayudarte.</p>
 			<p>⛳ Son 19 hoyos, cada uno con su propio diseño y dificultad.</p>
-			<p>🖱️ CLICK IZQ para un tiro directo, CLICK DER para tiro bombeado.</p>
-			<p>🔢 Usa las teclas 1–4 para cambiar la fuerza del disparo (4 = máxima).</p>
-			<p>🎮 WASD para moverte, ESPACIO para saltar, MOUSE para mirar.</p>
+			<p>🖱️ GATILLO DERECHO tiro bombeado láser azul, GATILLO IZQUIERDO tiro directo láser rojo.</p>
+			<p>🎮 USA el joystick para moverte.</p>
 			<p style="margin-top:15px;font-size:14px;color:#ccc;">
 				Diseñado por <strong>Brachiel Silva</strong> ·
 				<a href="https://github.com/brachiel22200769" target="_blank" style="color:#4af;">GitHub</a>
@@ -137,6 +136,8 @@
 		const scene = new THREE.Scene();
 		scene.background = new THREE.Color(0x88ccee);
 		scene.fog = new THREE.Fog(0x88ccee, 0, 50);
+
+
 
 		const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 		window.camera = camera;
@@ -395,11 +396,11 @@
 			let impulse;
 
 			if (type === 'lob') {
-				impulse = (4 + clampedCharge * 5) * chargeMultiplier;
+				impulse = (4 + clampedCharge * 5) * chargeMultiplier * 2;
 				playerDirection.y = 1.0;
 				playerDirection.normalize();
 			} else {
-				impulse = (2 + clampedCharge * 6) * chargeMultiplier;
+				impulse = (2 + clampedCharge * 6) * chargeMultiplier * 2;
 			}
 
 			sphere.velocity.copy(playerDirection).multiplyScalar(impulse);
@@ -729,14 +730,6 @@
 				});
 
 		});
-
-		const gui = new GUI({ width: 200 });
-		gui.add({ debug: false }, 'debug')
-			.onChange(function (value) {
-
-				helper.visible = value;
-
-			});
 
 		function teleportPlayerIfOob() {
 			// Reposicionar al jugador si cae fuera del mapa
