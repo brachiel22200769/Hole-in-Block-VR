@@ -236,6 +236,9 @@
 		document.body.appendChild(VRButton.createButton(renderer));
 
 		let joystickX = 1, joystickY = 0;
+		let leftJoystickX = 0;
+		let leftJoystickY = 0;
+
 
 		renderer.xr.addEventListener('sessionstart', () => {
 			const session = renderer.xr.getSession();
@@ -250,8 +253,31 @@
 							joystickY = gamepad.axes[3] || 0;
 						}, 50);
 					}
+
+					if (source.handedness === 'left' && source.gamepad) {
+						const gamepadLeft = source.gamepad;
+
+						setInterval(() => {
+							leftJoystickX = gamepadLeft.axes[2] || 0;
+							const leftJoystickY = gamepadLeft.axes[3] || 0;
+
+							// Rotación horizontal (izquierda/derecha)
+							if (Math.abs(leftJoystickX) > 0.1) {
+								camera.rotation.y -= leftJoystickX * 0.03;
+							}
+
+							// Rotación vertical (arriba/abajo)
+							if (Math.abs(leftJoystickY) > 0.1) {
+								camera.rotation.x -= leftJoystickY * 0.02;
+
+								// Limita el ángulo vertical para evitar volteretas
+								camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+							}
+						}, 50);
+					}
 				}
 			});
+
 		});
 
 
