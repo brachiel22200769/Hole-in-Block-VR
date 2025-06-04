@@ -184,7 +184,8 @@
 		renderer.xr.enabled = true;
 
 		const controller = renderer.xr.getController(0);
-		scene.add(controller);
+		playerGroup.add(controller);
+		playerGroup.add(controllerLeft);
 
 		const geometryLine = new THREE.BufferGeometry().setFromPoints([
 			new THREE.Vector3(0, 0, 0),
@@ -231,7 +232,8 @@
 			throwBall('lob'); // disparo lob con gatillo izquierdo
 		});
 
-		scene.add(controllerLeft);
+		playerGroup.add(controller);
+		playerGroup.add(controllerLeft);
 
 		document.body.appendChild(VRButton.createButton(renderer));
 
@@ -392,6 +394,7 @@
 
 			const spawnPosition = camera.position.clone();
 			camera.getWorldDirection(playerDirection);
+			
 			spawnPosition.addScaledVector(playerDirection, 0.4); // adelante
 			spawnPosition.y += 0.08; // más alto
 
