@@ -196,23 +196,24 @@
 
 		let joystickX = 1, joystickY = 0;
 
-		renderer.xr.addEventListener('sessionstart', () => { inVR = true; });
-		renderer.xr.addEventListener('sessionend', () => { inVR = false; });
+		renderer.xr.addEventListener('sessionstart', () => {
+			const session = renderer.xr.getSession();
 
-		const session = renderer.xr.getSession();
+			session.addEventListener('inputsourceschange', () => {
+				for (const source of session.inputSources) {
+					if (source.handedness === 'right' && source.gamepad) {
+						const gamepad = source.gamepad;
 
-		session.addEventListener('inputsourceschange', () => {
-			for (const source of session.inputSources) {
-				if (source.handedness === 'right' && source.gamepad) {
-					const gamepad = source.gamepad;
-
-					setInterval(() => {
-						joystickX = gamepad.axes[2] || 0;
-						joystickY = gamepad.axes[3] || 0;
-					}, 50);
+						setInterval(() => {
+							joystickX = gamepad.axes[2] || 0;
+							joystickY = gamepad.axes[3] || 0;
+						}, 50);
+					}
 				}
-			}
+			});
 		});
+
+
 
 		const stats = new Stats();
 		stats.domElement.style.position = 'absolute';
@@ -235,16 +236,6 @@
 		let forceLevel = 1;
 		let puntaje = 0;
 		let chargeMultiplier = 1;
-
-		let inVR = false;
-
-		renderer.xr.addEventListener('sessionstart', () => {
-			inVR = true;
-		});
-
-		renderer.xr.addEventListener('sessionend', () => {
-			inVR = false;
-		});
 
 		for (let i = 0; i < NUM_SPHERES; i++) {
 
@@ -425,8 +416,7 @@
 
 				teleportPlayerIfOob();
 
-				playerVelocity.x *= Math.exp(-5 * deltaTime);
-				playerVelocity.z *= Math.exp(-5 * deltaTime);
+
 			}
 
 			playerVelocity.addScaledVector(playerVelocity, damping);
@@ -572,6 +562,64 @@
 
 		}
 
+		function controls(deltaTime) {
+
+
+			// Movimiento con joystick (VR)
+			if (joystickX !== 0 || joystickY !== 0) {
+				const forward = new THREE.Vector3();
+				camera.getWorldDirection(forward);
+				forward.y = 0;
+				forward.normalize();
+
+				const side = new THREE.Vector3();
+				side.crossVectors(camera.up, forward).normalize();
+
+				const speed = deltaTime * 3;
+
+				playerVelocity.addScaledVector(forward, -joystickY * speed);
+				playerVelocity.addScaledVector(side, joystickX * speed);
+			}
+
+			// gives a bit of air control
+			const speedDelta = deltaTime * (playerOnFloor ? 4 : 1.5);
+
+			if (keyStates['KeyW']) {
+
+				playerVelocity.add(getForwardVector().multiplyScalar(speedDelta));
+
+			}
+
+			if (keyStates['KeyS']) {
+
+				playerVelocity.add(getForwardVector().multiplyScalar(- speedDelta));
+
+			}
+
+			if (keyStates['KeyA']) {
+
+				playerVelocity.add(getSideVector().multiplyScalar(- speedDelta));
+
+			}
+
+			if (keyStates['KeyD']) {
+
+				playerVelocity.add(getSideVector().multiplyScalar(speedDelta));
+
+			}
+
+			if (playerOnFloor) {
+
+				if (keyStates['Space']) {
+
+					playerVelocity.y = 2.0;
+
+				}
+
+			}
+
+		}
+
 		const loader = new GLTFLoader().setPath('./models/gltf/');
 		loader.setMeshoptDecoder(MeshoptDecoder); // Soporte para meshopt compression
 
@@ -670,73 +718,26 @@
 		}
 
 		function animate() {
+
 			const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
 
 			for (let i = 0; i < STEPS_PER_FRAME; i++) {
+
 				controls(deltaTime);
+
 				updatePlayer(deltaTime);
+
 				updateSpheres(deltaTime);
+
 				teleportPlayerIfOob();
+
 			}
 
 			renderer.render(scene, camera);
+
 			stats.update();
+
 		}
-
-
-		renderer.setAnimationLoop(animate);
-
-		function updateGamepad() {
-			const session = renderer.xr.getSession();
-			if (!session) return;
-
-			for (const source of session.inputSources) {
-				if (source.handedness === 'right' && source.gamepad) {
-					const axes = source.gamepad.axes;
-					joystickX = axes[2] || 0;
-					joystickY = axes[3] || 0;
-				}
-			}
-		}
-
-		function controls(deltaTime) {
-			if (inVR) {
-				updateGamepad();
-				// Movimiento con joystick en VR (mando derecho)
-				if (joystickX !== 0 || joystickY !== 0) {
-					const speed = deltaTime * 3;
-
-					// Mueve en plano XZ, joystickY hacia adelante en -Z y joystickX lateral en +X
-					playerVelocity.x += joystickX * speed;
-					playerVelocity.z += -joystickY * speed;
-				}
-			} else {
-				// Movimiento PC relativo a cámara (como antes)
-				const speedDelta = deltaTime * (playerOnFloor ? 4 : 1.5);
-
-				if (keyStates['KeyW']) {
-					playerVelocity.add(getForwardVector().multiplyScalar(speedDelta));
-				}
-				if (keyStates['KeyS']) {
-					playerVelocity.add(getForwardVector().multiplyScalar(-speedDelta));
-				}
-				if (keyStates['KeyA']) {
-					playerVelocity.add(getSideVector().multiplyScalar(-speedDelta));
-				}
-				if (keyStates['KeyD']) {
-					playerVelocity.add(getSideVector().multiplyScalar(speedDelta));
-				}
-			}
-			// Salto si está en el suelo (igual en VR y PC)
-			if (playerOnFloor && keyStates['Space']) {
-				playerVelocity.y = 2.0;
-			}
-		}
-
-		renderer.render(scene, camera);
-
-		stats.update();
-
 
 		renderer.setAnimationLoop(animate);
 
@@ -786,5 +787,4 @@
 
 	</script>
 </body>
-
 </html>
