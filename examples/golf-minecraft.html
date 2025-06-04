@@ -179,12 +179,46 @@
 		const controller = renderer.xr.getController(0);
 		scene.add(controller);
 
+		const geometryLine = new THREE.BufferGeometry().setFromPoints([
+			new THREE.Vector3(0, 0, 0),
+			new THREE.Vector3(0, 0, -1)
+		]);
+
+		const lineMaterial = new THREE.LineBasicMaterial({
+			color: 0xff0000,
+			linewidth: 4
+		});
+
+		const laserLine = new THREE.Line(geometryLine, lineMaterial);
+		laserLine.name = 'laserLine';
+		laserLine.scale.z = 5; // largo del rayo
+		controller.add(laserLine);
+
+
+
 		controller.addEventListener('selectstart', () => {
 			throwBall('direct'); // Lanza pelota cuando presionas el gatillo
 		});
 
 		const controllerLeft = renderer.xr.getController(1);
 		scene.add(controllerLeft);
+
+		const geometryLineL = new THREE.BufferGeometry().setFromPoints([
+			new THREE.Vector3(0, 0, 0),
+			new THREE.Vector3(0, 0, -1)
+		]);
+
+		const lineMaterialL = new THREE.LineBasicMaterial({
+			color: 0x00ffff, // puedes cambiar el color si quieres diferenciarlo
+			linewidth: 4
+		});
+
+		const laserLineL = new THREE.Line(geometryLineL, lineMaterialL);
+		laserLineL.name = 'laserLineLeft';
+		laserLineL.scale.z = 5; // largo del rayo
+
+		controllerLeft.add(laserLineL);
+
 
 		controllerLeft.addEventListener('selectstart', () => {
 			throwBall('lob'); // disparo lob con gatillo izquierdo
