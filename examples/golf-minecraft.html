@@ -210,6 +210,9 @@
 
 		const controllerLeft = renderer.xr.getController(1);
 		scene.add(controllerLeft);
+		
+		playerGroup.add(controller);
+		playerGroup.add(controllerLeft);
 
 		const geometryLineL = new THREE.BufferGeometry().setFromPoints([
 			new THREE.Vector3(0, 0, 0),
@@ -231,9 +234,6 @@
 		controllerLeft.addEventListener('selectstart', () => {
 			throwBall('lob'); // disparo lob con gatillo izquierdo
 		});
-
-		playerGroup.add(controller);
-		playerGroup.add(controllerLeft);
 
 		document.body.appendChild(VRButton.createButton(renderer));
 
@@ -299,8 +299,8 @@
 		const worldOctree = new Octree();
 
 		const playerCollider = new Capsule(
-			new THREE.Vector3(0, 1.3, 0),
-			new THREE.Vector3(0, 1.5, 0),
+			new THREE.Vector3(0, 2, 0),
+			new THREE.Vector3(0, 2.2, 0),
 			0.1);
 
 		const playerVelocity = new THREE.Vector3();
@@ -743,7 +743,7 @@
 
 		function teleportPlayerIfOob() {
 			// Reposicionar al jugador si cae fuera del mapa
-			if (camera.position.y <= -25) {
+			if (playerGroup.position.y <= -25) {
 				const respawnHeight = 10; // Altura segura, visible y por encima del mapa
 
 				playerCollider.start.set(0, respawnHeight - 0.2, 0); // pies
