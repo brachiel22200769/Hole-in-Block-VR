@@ -239,12 +239,13 @@
 		let hoyoActual = 0;
 
 		const posicionesHoyos = [
-			new THREE.Vector3(0.9, 1, -0.6), // Hoyo 1
-			new THREE.Vector3(10, 2, 5),     // Hoyo 2
-			new THREE.Vector3(20, 2, -8),    // Hoyo 3
-			new THREE.Vector3(30, 2, 12),    // Hoyo 4
-			// Agrega más posiciones aquí
+			new THREE.Vector3(-2.8, 0.2, -2.4),
+			new THREE.Vector3(-4.1, 0.2, -1.0),
+			new THREE.Vector3(-3.0, 0.2, 1.0),
+			new THREE.Vector3(-1.5, 0.2, 1.5),
+			new THREE.Vector3(0.0, 0.2, 2.0)
 		];
+
 
 		let chargeMultiplier = 1;
 
@@ -536,7 +537,12 @@
 					sphere.counted = true;
 					puntaje += 10;
 					document.getElementById('puntaje-valor').textContent = puntaje;
+
+					setTimeout(() => {
+						avanzarHoyo();
+					}, 1000); // Espera 1 segundo para avanzar
 				}
+
 
 				playerSphereCollision(sphere);
 
@@ -727,6 +733,29 @@
 				camera.rotation.set(0, 0, 0);
 			}
 		}
+
+		function avanzarHoyo() {
+			hoyoActual++;
+			if (hoyoActual >= posicionesHoyos.length) {
+				alert("🎉 Has completado todos los hoyos!");
+				hoyoActual = 0; // reinicia si deseas
+			}
+
+			const nuevaPos = posicionesHoyos[hoyoActual];
+
+			playerCollider.start.set(nuevaPos.x, nuevaPos.y - 0.2, nuevaPos.z);
+			playerCollider.end.set(nuevaPos.x, nuevaPos.y, nuevaPos.z);
+			camera.position.copy(playerCollider.end);
+			camera.rotation.set(0, 0, 0);
+
+			// Reinicia todas las esferas
+			for (const sphere of spheres) {
+				sphere.collider.center.set(0, 9999, 0);
+				sphere.velocity.set(0, 0, 0);
+				sphere.counted = false;
+			}
+		}
+
 
 		function animate() {
 
