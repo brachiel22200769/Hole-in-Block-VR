@@ -92,8 +92,9 @@
 			<h2>Bienvenid@ a <span style="color:#f44;">Hole in Block VR</span></h2>
 			<p>🎯 El objetivo es meter la pelota en el hoyo, puedes patearla para ayudarte.</p>
 			<p>⛳ Son 19 hoyos, cada uno con su propio diseño y dificultad.</p>
+			<p>👀 Las pelotas irán a donde mires.</p>
 			<p>🖱️ GATILLO DERECHO tiro bombeado láser azul, GATILLO IZQUIERDO tiro directo láser rojo.</p>
-			<p>🎮 USA el joystick para moverte.</p>
+			<p>🕹️ Usa el JOYSTICK DERECHO para moverte.</p>
 			<p style="margin-top:15px;font-size:14px;color:#ccc;">
 				Diseñado por <strong>Brachiel Silva</strong> ·
 				<a href="https://github.com/brachiel22200769" target="_blank" style="color:#4af;">GitHub</a>
@@ -151,7 +152,7 @@
 
 		const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
 		directionalLight.position.set(- 5, 25, - 1);
-		directionalLight.castShadow = true;
+		//directionalLight.castShadow = true;
 		directionalLight.shadow.camera.near = 0.01;
 		directionalLight.shadow.camera.far = 500;
 		directionalLight.shadow.camera.right = 30;
@@ -169,8 +170,8 @@
 		const renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setPixelRatio(window.devicePixelRatio);
 		renderer.setSize(window.innerWidth, window.innerHeight);
-		renderer.shadowMap.enabled = true;
-		renderer.shadowMap.type = THREE.VSMShadowMap;
+		//renderer.shadowMap.enabled = true;
+		//renderer.shadowMap.type = THREE.VSMShadowMap;
 		renderer.toneMapping = THREE.ACESFilmicToneMapping;
 		container.appendChild(renderer.domElement);
 
@@ -387,7 +388,7 @@
 			const spawnPosition = camera.position.clone();
 			camera.getWorldDirection(playerDirection);
 			spawnPosition.addScaledVector(playerDirection, 0.4); // adelante
-			spawnPosition.y += 0.1; // más alto
+			spawnPosition.y += 0.08; // más alto
 
 			sphere.collider.center.copy(spawnPosition);
 
