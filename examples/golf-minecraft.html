@@ -132,6 +132,10 @@
 		import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 		import { VRButton } from 'three/addons/webxr/VRButton.js';
 
+		import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+		import { TeleportControls } from 'three/addons/controls/TeleportControls.js'; // si existe o equivalente
+		import { Line } from 'three';
+
 		const clock = new THREE.Clock();
 
 		const scene = new THREE.Scene();
@@ -190,6 +194,41 @@
 			throwBall('lob'); // disparo lob con gatillo izquierdo
 		});
 
+		const controller1 = renderer.xr.getController(0);
+		scene.add(controller1);
+
+		const controller2 = renderer.xr.getController(1);
+		scene.add(controller2);
+
+		const controllerModelFactory = new XRControllerModelFactory();
+
+		const controllerGrip1 = renderer.xr.getControllerGrip(0);
+		controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+		scene.add(controllerGrip1);
+
+		const controllerGrip2 = renderer.xr.getControllerGrip(1);
+		controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+		scene.add(controllerGrip2);
+
+		// Configura teletransporte (esto es ejemplo simplificado)
+		const teleportLine = new THREE.Line(
+			new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]),
+			new THREE.LineBasicMaterial({ color: 0x00ff00 })
+		);
+
+		controller1.add(teleportLine);
+		teleportLine.visible = false;
+
+		controller1.addEventListener('selectstart', () => {
+			teleportLine.visible = true;
+		});
+
+		controller1.addEventListener('selectend', () => {
+			teleportLine.visible = false;
+			// Aquí va lógica para teletransportar a la posición señalada (raycasting)
+		});
+
+
 		scene.add(controllerLeft);
 
 		document.body.appendChild(VRButton.createButton(renderer));
@@ -236,6 +275,8 @@
 		let forceLevel = 1;
 		let puntaje = 0;
 		let chargeMultiplier = 1;
+
+		let teleportActive = false;
 
 		for (let i = 0; i < NUM_SPHERES; i++) {
 
@@ -618,6 +659,8 @@
 
 			}
 
+			updateGamepadButtons();
+
 		}
 
 		const loader = new GLTFLoader().setPath('./models/gltf/');
@@ -737,9 +780,48 @@
 
 			stats.update();
 
+			updateGamepadButtons();
+
 		}
 
 		renderer.setAnimationLoop(animate);
+
+		function updateGamepadButtons() {
+			const session = renderer.xr.getSession();
+			if (!session) return;
+
+			for (const source of session.inputSources) {
+				if (source.gamepad) {
+					const gp = source.gamepad;
+
+					// Botones X, A, Y, B suelen estar en índices 0,1,2,3 (puede variar según mando)
+					const pressedButtons = gp.buttons.map(btn => btn.pressed);
+
+					// Si alguno de estos botones está presionado, activa teletransporte
+					if (pressedButtons[0] || pressedButtons[1] || pressedButtons[2] || pressedButtons[3]) {
+						if (!teleportActive) {
+							teleportActive = true;
+							showTeleportPointer(true);
+						}
+					} else {
+						if (teleportActive) {
+							teleportActive = false;
+							showTeleportPointer(false);
+							performTeleport();
+						}
+					}
+				}
+			}
+		}
+
+		function showTeleportPointer(show) {
+			teleportLine.visible = show;
+		}
+
+		function performTeleport() {
+			// Aquí implementa raycasting para encontrar punto válido y mover jugador
+			// Usa lógica similar a ejemplo anterior con raycaster
+		}
 
 		function reproducirMusica() {
 			if (!musicaFondo.isPlaying) {
