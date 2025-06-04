@@ -207,26 +207,7 @@
 						setInterval(() => {
 							joystickX = gamepad.axes[2] || 0;
 							joystickY = gamepad.axes[3] || 0;
-
-							const speed = 0.05;
-
-							const forward = new THREE.Vector3();
-							camera.getWorldDirection(forward);
-							forward.y = 0;
-							forward.normalize();
-
-							const side = new THREE.Vector3();
-							side.crossVectors(camera.up, forward).normalize();
-
-							playerCollider.start.addScaledVector(forward, -joystickY * speed);
-							playerCollider.end.addScaledVector(forward, -joystickY * speed);
-							playerCollider.start.addScaledVector(side, joystickX * speed);
-							playerCollider.end.addScaledVector(side, joystickX * speed);
-
-							camera.position.copy(playerCollider.end);
 						}, 50);
-
-
 					}
 				}
 			});
