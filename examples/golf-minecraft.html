@@ -144,11 +144,6 @@
 		window.camera = camera;
 		camera.rotation.order = 'YXZ';
 
-		const playerGroup = new THREE.Group();
-		playerGroup.add(camera);
-		scene.add(playerGroup);
-
-
 
 
 		const fillLight1 = new THREE.HemisphereLight(0x8dc1de, 0x00668d, 1.5);
@@ -184,8 +179,7 @@
 		renderer.xr.enabled = true;
 
 		const controller = renderer.xr.getController(0);
-		playerGroup.add(controller);
-		playerGroup.add(controllerLeft);
+		scene.add(controller);
 
 		const geometryLine = new THREE.BufferGeometry().setFromPoints([
 			new THREE.Vector3(0, 0, 0),
@@ -232,8 +226,7 @@
 			throwBall('lob'); // disparo lob con gatillo izquierdo
 		});
 
-		playerGroup.add(controller);
-		playerGroup.add(controllerLeft);
+		scene.add(controllerLeft);
 
 		document.body.appendChild(VRButton.createButton(renderer));
 
@@ -266,7 +259,7 @@
 		const GRAVITY = 30;
 
 		const NUM_SPHERES = 50;
-		const SPHERE_RADIUS = 0.02;
+		const SPHERE_RADIUS = 0.02; 
 
 		const STEPS_PER_FRAME = 5;
 
@@ -299,8 +292,8 @@
 		const worldOctree = new Octree();
 
 		const playerCollider = new Capsule(
-			new THREE.Vector3(0, 1.3, 0),
-			new THREE.Vector3(0, 1.5, 0),
+			new THREE.Vector3(0, 0.008, 0),
+			new THREE.Vector3(0, 0.005, 0),
 			0.1);
 
 		const playerVelocity = new THREE.Vector3();
@@ -394,7 +387,6 @@
 
 			const spawnPosition = camera.position.clone();
 			camera.getWorldDirection(playerDirection);
-			
 			spawnPosition.addScaledVector(playerDirection, 0.4); // adelante
 			spawnPosition.y += 0.08; // más alto
 
@@ -470,8 +462,7 @@
 
 			playerCollisions();
 
-			playerGroup.position.copy(playerCollider.end);
-			playerGroup.position.y -= 0.05; // para evitar que el jugador se quede pegado al suelo
+			camera.position.copy(playerCollider.end);
 
 		}
 
@@ -750,7 +741,7 @@
 				playerCollider.end.set(0, respawnHeight, 0);         // cabeza
 				playerCollider.radius = 0.1;
 
-				playerGroup.position.copy(playerCollider.end);
+				camera.position.copy(playerCollider.end);
 				camera.rotation.set(0, 0, 0);
 			}
 		}
