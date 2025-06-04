@@ -144,6 +144,11 @@
 		window.camera = camera;
 		camera.rotation.order = 'YXZ';
 
+		const playerGroup = new THREE.Group();
+		playerGroup.add(camera);
+		scene.add(playerGroup);
+
+
 
 
 		const fillLight1 = new THREE.HemisphereLight(0x8dc1de, 0x00668d, 1.5);
@@ -259,7 +264,7 @@
 		const GRAVITY = 30;
 
 		const NUM_SPHERES = 50;
-		const SPHERE_RADIUS = 0.02; 
+		const SPHERE_RADIUS = 0.02;
 
 		const STEPS_PER_FRAME = 5;
 
@@ -462,7 +467,7 @@
 
 			playerCollisions();
 
-			camera.position.copy(playerCollider.end);
+			playerGroup.position.copy(playerCollider.end);
 
 		}
 
